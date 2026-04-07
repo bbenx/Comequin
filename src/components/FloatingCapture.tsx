@@ -41,6 +41,7 @@ export function FloatingCapture() {
       status: 'en_attente',
       brief: text,
       emailHistory: [],
+      attachments: [],
       createdAt: now,
       updatedAt: now,
     })

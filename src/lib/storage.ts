@@ -1,4 +1,4 @@
-import type { AppState } from '../types'
+import type { AppState, Project } from '../types'
 import { DEFAULT_SETTINGS } from '../types'
 
 const STORAGE_KEY = 'comequin-app-v1'
@@ -10,7 +10,9 @@ export function loadState(): AppState {
     const parsed = JSON.parse(raw) as Partial<AppState>
     return {
       events: Array.isArray(parsed.events) ? parsed.events : [],
-      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+      projects: Array.isArray(parsed.projects)
+        ? parsed.projects.map(normalizeProject)
+        : [],
       quickNotes: Array.isArray(parsed.quickNotes) ? parsed.quickNotes : [],
       dailyItems: Array.isArray(parsed.dailyItems) ? parsed.dailyItems : [],
       dailyCheckedIds: Array.isArray(parsed.dailyCheckedIds)
@@ -32,6 +34,12 @@ export function saveState(state: AppState): void {
   } catch {
     /* quota / private mode */
   }
+}
+
+function normalizeProject(raw: unknown): Project {
+  const p = raw as Project
+  const attachments = Array.isArray(p.attachments) ? p.attachments : []
+  return { ...p, attachments }
 }
 
 function defaultState(): AppState {

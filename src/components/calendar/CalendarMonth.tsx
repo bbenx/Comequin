@@ -20,7 +20,9 @@ type Props = {
   events: CalendarEvent[]
   onPrev: () => void
   onNext: () => void
-  onPickDay: (d: Date) => void
+  /** Clic sur une case jour : afficher les événements du jour */
+  onSelectDay: (d: Date) => void
+  onGoToday: () => void
   onOpenEvent: (e: CalendarEvent) => void
 }
 
@@ -29,7 +31,8 @@ export function CalendarMonth({
   events,
   onPrev,
   onNext,
-  onPickDay,
+  onSelectDay,
+  onGoToday,
   onOpenEvent,
 }: Props) {
   const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 })
@@ -54,11 +57,7 @@ export function CalendarMonth({
             →
           </button>
         </div>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => onPickDay(new Date())}
-        >
+        <button type="button" className="btn btn-ghost" onClick={onGoToday}>
           Aujourd’hui
         </button>
       </div>
@@ -78,7 +77,7 @@ export function CalendarMonth({
               key={d.toISOString()}
               type="button"
               className={`cal-cell ${muted ? 'muted' : ''} ${todayCell ? 'today' : ''}`}
-              onClick={() => onPickDay(d)}
+              onClick={() => onSelectDay(d)}
             >
               <div className="day-num">{format(d, 'd')}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>

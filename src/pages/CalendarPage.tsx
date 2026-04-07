@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { isSameDay, parseISO } from 'date-fns'
 import { useAppState } from '../context/AppStateContext'
 import { CalendarMonth } from '../components/calendar/CalendarMonth'
 import { CalendarWeek } from '../components/calendar/CalendarWeek'
+import { DayEventsModal } from '../components/calendar/DayEventsModal'
 import { addMonth, addWeek } from '../lib/calendarNav'
 import { EventModal } from '../components/calendar/EventModal'
 import type { CalendarEvent } from '../types'
@@ -16,6 +18,14 @@ export function CalendarPage() {
   const [modalKey, setModalKey] = useState(0)
   const [modalDate, setModalDate] = useState<Date | undefined>()
   const [editing, setEditing] = useState<CalendarEvent | null>(null)
+  const [dayPanel, setDayPanel] = useState<Date | null>(null)
+
+  const eventsForDayPanel = useMemo(() => {
+    if (!dayPanel) return []
+    return state.events.filter((ev) =>
+      isSameDay(parseISO(ev.start), dayPanel),
+    )
+  }, [dayPanel, state.events])
 
   const openNew = (d?: Date) => {
     setModalKey((k) => k + 1)
@@ -25,10 +35,18 @@ export function CalendarPage() {
   }
 
   const openEdit = (e: CalendarEvent) => {
+    setDayPanel(null)
     setModalKey((k) => k + 1)
     setEditing(e)
     setModalDate(undefined)
     setModalOpen(true)
+  }
+
+  const openNewForDay = (d: Date) => {
+    const start = new Date(d)
+    start.setHours(9, 0, 0, 0)
+    setDayPanel(null)
+    openNew(start)
   }
 
   return (
@@ -66,7 +84,8 @@ export function CalendarPage() {
           events={state.events}
           onPrev={() => setCursor((c) => addMonth(c, -1))}
           onNext={() => setCursor((c) => addMonth(c, 1))}
-          onPickDay={(d) => openNew(d)}
+          onSelectDay={(d) => setDayPanel(d)}
+          onGoToday={() => setCursor(new Date())}
           onOpenEvent={openEdit}
         />
       ) : (
@@ -76,6 +95,16 @@ export function CalendarPage() {
           onPrev={() => setCursor((c) => addWeek(c, -1))}
           onNext={() => setCursor((c) => addWeek(c, 1))}
           onOpenEvent={openEdit}
+        />
+      )}
+
+      {dayPanel && (
+        <DayEventsModal
+          date={dayPanel}
+          events={eventsForDayPanel}
+          onClose={() => setDayPanel(null)}
+          onOpenEvent={openEdit}
+          onCreateOnDay={() => openNewForDay(dayPanel)}
         />
       )}
 

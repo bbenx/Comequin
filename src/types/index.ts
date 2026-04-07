@@ -41,6 +41,15 @@ export interface SentEmailRecord {
   body: string
 }
 
+/** Pièce jointe stockée localement (data URL), liée à une fiche projet */
+export interface ProjectAttachment {
+  id: string
+  name: string
+  mimeType: string
+  dataUrl: string
+  addedAt: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -48,6 +57,8 @@ export interface Project {
   status: ProjectStatus
   brief: string
   emailHistory: SentEmailRecord[]
+  /** Photos et fichiers associés à la fiche */
+  attachments: ProjectAttachment[]
   createdAt: string
   updatedAt: string
 }

@@ -4,6 +4,7 @@ import type { Project, ProjectStatus } from '../types'
 import { PROJECT_STATUS_LABELS } from '../constants/projectStatus'
 import { useAppActions, useAppState } from '../context/AppStateContext'
 import { MailAssistantModal } from '../components/projects/MailAssistantModal'
+import { ProjectAttachmentsSection } from '../components/projects/ProjectAttachmentsSection'
 
 function emptyProject(id: string): Project {
   const now = new Date().toISOString()
@@ -14,6 +15,7 @@ function emptyProject(id: string): Project {
     status: 'en_attente',
     brief: '',
     emailHistory: [],
+    attachments: [],
     createdAt: now,
     updatedAt: now,
   }
@@ -150,6 +152,11 @@ function ProjectDetailInner({ id }: { id: string }) {
           onChange={(e) => setField('brief', e.target.value)}
         />
       </div>
+
+      <ProjectAttachmentsSection
+        attachments={project.attachments}
+        onChange={(attachments) => setField('attachments', attachments)}
+      />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <button type="button" className="btn btn-primary" onClick={save}>
