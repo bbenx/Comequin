@@ -1,5 +1,6 @@
-import type { AppState, Project } from '../types'
+import type { AppState, CalendarEvent, Project } from '../types'
 import { DEFAULT_SETTINGS } from '../types'
+import { migrateEventType } from '../constants/eventTypes'
 
 const STORAGE_KEY = 'comequin-app-v1'
 
@@ -9,7 +10,9 @@ export function loadState(): AppState {
     if (!raw) return defaultState()
     const parsed = JSON.parse(raw) as Partial<AppState>
     return {
-      events: Array.isArray(parsed.events) ? parsed.events : [],
+      events: Array.isArray(parsed.events)
+        ? parsed.events.map(normalizeEvent)
+        : [],
       projects: Array.isArray(parsed.projects)
         ? parsed.projects.map(normalizeProject)
         : [],
@@ -33,6 +36,21 @@ export function saveState(state: AppState): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
     /* quota / private mode */
+  }
+}
+
+function normalizeEvent(raw: unknown): CalendarEvent {
+  const e = raw as CalendarEvent
+  const attachments = Array.isArray(e.attachments) ? e.attachments : []
+  const paid = typeof e.paid === 'boolean' ? e.paid : false
+  const contact =
+    e.contact && typeof e.contact === 'object' ? e.contact : undefined
+  return {
+    ...e,
+    type: migrateEventType(e.type as string),
+    paid,
+    attachments,
+    contact,
   }
 }
 

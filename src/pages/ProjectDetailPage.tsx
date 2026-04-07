@@ -67,10 +67,10 @@ function ProjectDetailInner({ id }: { id: string }) {
     const next = { ...project, updatedAt: now }
     if (isNew) {
       addProject({ ...next, createdAt: now })
-      navigate(`/projets/${next.id}`, { replace: true })
     } else {
       updateProject(next)
     }
+    navigate('/projets')
   }
 
   const remove = () => {

@@ -1,5 +1,4 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { FloatingCapture } from './FloatingCapture'
 import { AppEffects } from './AppEffects'
 
 const links = [
@@ -16,7 +15,6 @@ export function Layout() {
       <div className="app-shell">
         <Outlet />
       </div>
-      <FloatingCapture />
       <nav className="bottom-nav" aria-label="Navigation principale">
         {links.map(({ to, label, icon }) => (
           <NavLink

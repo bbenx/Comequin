@@ -1,11 +1,12 @@
 export type EventType =
-  | 'casting_confirme'
-  | 'callback_confirme'
-  | 'shooting_confirme'
-  | 'casting_possible'
   | 'callback_possible'
-  | 'shooting_possible'
-  | 'en_attente_retour'
+  | 'selftape_preparation'
+  | 'selftape_envoi'
+  | 'attente_retour'
+  | 'callback_casting'
+  | 'tournage_shooting'
+  | 'apprentissage_texte'
+  | 'atelier'
 
 export type ProjectStatus = 'en_attente' | 'confirme' | 'refuse' | 'sans_reponse'
 
@@ -16,6 +17,16 @@ export interface EventReminder {
   unit: ReminderUnit
 }
 
+/** Contact lié à un événement (casting, prod…) */
+export interface EventContact {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  /** Ex. directeur·rice de casting, assistante prod */
+  role?: string
+}
+
 export interface CalendarEvent {
   id: string
   title: string
@@ -23,6 +34,11 @@ export interface CalendarEvent {
   start: string
   end?: string
   projectId?: string
+  /** Projet rémunéré ou non */
+  paid?: boolean
+  contact?: EventContact
+  /** Scénario, fiche selftape, etc. (stockage local) */
+  attachments?: ProjectAttachment[]
   reminder?: EventReminder
   /** Réinitialisé quand la date de rappel ou l’événement change */
   reminderNotified?: boolean

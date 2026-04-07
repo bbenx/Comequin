@@ -1,12 +1,20 @@
 import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import type { CalendarEvent, EventType, ReminderUnit } from '../../types'
+import type {
+  CalendarEvent,
+  EventContact,
+  EventType,
+  ProjectAttachment,
+  ReminderUnit,
+} from '../../types'
 import {
+  DEFAULT_EVENT_TYPE,
+  EVENT_TYPE_GROUPS,
   EVENT_TYPE_LABELS,
-  EVENT_TYPE_ORDER,
-  EVENT_TYPE_COLORS,
 } from '../../constants/eventTypes'
 import { useAppActions, useAppState } from '../../context/AppStateContext'
+import { LocalAttachmentsPicker } from '../shared/LocalAttachmentsPicker'
+import { MAX_LOCAL_FILE_BYTES } from '../../lib/localFiles'
 
 function toInputLocal(iso: string) {
   try {
@@ -18,6 +26,35 @@ function toInputLocal(iso: string) {
 
 function fromInputLocal(s: string) {
   return new Date(s).toISOString()
+}
+
+type ContactForm = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  role: string
+}
+
+function contactFromEvent(ev: CalendarEvent | null | undefined): ContactForm {
+  const c = ev?.contact
+  return {
+    firstName: c?.firstName ?? '',
+    lastName: c?.lastName ?? '',
+    email: c?.email ?? '',
+    phone: c?.phone ?? '',
+    role: c?.role ?? '',
+  }
+}
+
+function contactFormToContact(f: ContactForm): EventContact | undefined {
+  const out: EventContact = {}
+  if (f.firstName.trim()) out.firstName = f.firstName.trim()
+  if (f.lastName.trim()) out.lastName = f.lastName.trim()
+  if (f.email.trim()) out.email = f.email.trim()
+  if (f.phone.trim()) out.phone = f.phone.trim()
+  if (f.role.trim()) out.role = f.role.trim()
+  return Object.keys(out).length ? out : undefined
 }
 
 export type EventModalProps = {
@@ -48,18 +85,28 @@ export function EventModal({
   const [title, setTitle] = useState(() =>
     editing
       ? editing.title
-      : (initialTitle?.trim() ?? EVENT_TYPE_LABELS.casting_confirme),
+      : (initialTitle?.trim() ?? EVENT_TYPE_LABELS[DEFAULT_EVENT_TYPE]),
   )
   const [type, setType] = useState<EventType>(
-    () => editing?.type ?? 'casting_confirme',
+    () => editing?.type ?? DEFAULT_EVENT_TYPE,
   )
   const [start, setStart] = useState(() =>
     editing
       ? toInputLocal(editing.start)
       : format((initialDate ?? new Date()), "yyyy-MM-dd'T'HH:mm"),
   )
+  const [end, setEnd] = useState(() =>
+    editing?.end ? toInputLocal(editing.end) : '',
+  )
   const [projectId, setProjectId] = useState(
     () => editing?.projectId ?? '',
+  )
+  const [paid, setPaid] = useState(() => !!editing?.paid)
+  const [contactForm, setContactForm] = useState<ContactForm>(() =>
+    contactFromEvent(editing),
+  )
+  const [attachments, setAttachments] = useState<ProjectAttachment[]>(
+    () => editing?.attachments ?? [],
   )
   const [reminderOn, setReminderOn] = useState(() => !!editing?.reminder)
   const [reminderValue, setReminderValue] = useState(
@@ -74,6 +121,10 @@ export function EventModal({
     return `${editing.start}|${JSON.stringify(editing.reminder ?? null)}`
   }, [editing])
 
+  const setContact = (patch: Partial<ContactForm>) => {
+    setContactForm((f) => ({ ...f, ...patch }))
+  }
+
   const pickType = (t: EventType) => {
     setType(t)
     if (!editing && !lockTitleFromInbox) setTitle(EVENT_TYPE_LABELS[t])
@@ -81,10 +132,22 @@ export function EventModal({
 
   const save = () => {
     const startIso = fromInputLocal(start)
+    let endIso: string | undefined
+    if (end.trim()) {
+      endIso = fromInputLocal(end)
+      if (new Date(endIso) <= new Date(startIso)) {
+        window.alert(
+          'La date et heure de fin doivent être strictement après le début.',
+        )
+        return
+      }
+    }
     const reminder =
       reminderOn && reminderValue > 0
         ? { value: reminderValue, unit: reminderUnit }
         : undefined
+    const contact = contactFormToContact(contactForm)
+    const atts = attachments.length > 0 ? attachments : undefined
 
     if (editing) {
       const nextKey = `${startIso}|${JSON.stringify(reminder ?? null)}`
@@ -94,7 +157,11 @@ export function EventModal({
         title: title.trim() || EVENT_TYPE_LABELS[type],
         type,
         start: startIso,
+        end: endIso,
         projectId: projectId || undefined,
+        paid,
+        contact,
+        attachments: atts,
         reminder,
         reminderNotified:
           nextKey === originalKey ? editing.reminderNotified : false,
@@ -105,7 +172,11 @@ export function EventModal({
         title: title.trim() || EVENT_TYPE_LABELS[type],
         type,
         start: startIso,
+        end: endIso,
         projectId: projectId || undefined,
+        paid,
+        contact,
+        attachments: atts,
         reminder,
         reminderNotified: false,
       })
@@ -124,7 +195,7 @@ export function EventModal({
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="modal-panel"
+        className="modal-panel event-modal-panel"
         role="dialog"
         aria-labelledby="event-modal-title"
         onClick={(e) => e.stopPropagation()}
@@ -148,35 +219,38 @@ export function EventModal({
         </div>
 
         <div className="field">
-          <label>Type</label>
-          <div className="chip-row">
-            {EVENT_TYPE_ORDER.map((t) => {
-              const c = EVENT_TYPE_COLORS[t]
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  className={`chip ${type === t ? 'active' : ''}`}
-                  style={
-                    type === t
-                      ? {
-                          background: c.bg,
-                          borderColor: c.border,
-                          color: c.text,
-                        }
-                      : undefined
-                  }
-                  onClick={() => pickType(t)}
-                >
-                  {EVENT_TYPE_LABELS[t]}
-                </button>
-              )
-            })}
-          </div>
+          <label htmlFor="event-type-select">Type d’étape</label>
+          <select
+            id="event-type-select"
+            className="select"
+            value={type}
+            onChange={(e) => pickType(e.target.value as EventType)}
+          >
+            {EVENT_TYPE_GROUPS.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.types.map((t) => (
+                  <option key={t} value={t}>
+                    {EVENT_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </div>
 
         <div className="field">
-          <label>Date et heure</label>
+          <label>
+            <input
+              type="checkbox"
+              checked={paid}
+              onChange={(e) => setPaid(e.target.checked)}
+            />{' '}
+            Projet rémunéré
+          </label>
+        </div>
+
+        <div className="field">
+          <label>Début</label>
           <input
             className="input"
             type="datetime-local"
@@ -186,13 +260,33 @@ export function EventModal({
         </div>
 
         <div className="field">
-          <label>Fiche projet (optionnel)</label>
+          <label>Fin (optionnel)</label>
+          <input
+            className="input"
+            type="datetime-local"
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+          />
+          <p
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              margin: '6px 0 0',
+            }}
+          >
+            Laisse vide pour un créneau ponctuel (une heure de début seule).
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="event-project-select">Fiche projet</label>
           <select
+            id="event-project-select"
             className="select"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
           >
-            <option value="">— Aucun —</option>
+            <option value="">— Aucune —</option>
             {state.projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -200,6 +294,62 @@ export function EventModal({
             ))}
           </select>
         </div>
+
+        <div className="event-modal-section">
+          <div className="event-modal-section-title">Contact sur cet événement</div>
+          <div className="event-contact-grid">
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Prénom</label>
+              <input
+                className="input"
+                value={contactForm.firstName}
+                onChange={(e) => setContact({ firstName: e.target.value })}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Nom</label>
+              <input
+                className="input"
+                value={contactForm.lastName}
+                onChange={(e) => setContact({ lastName: e.target.value })}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Rôle</label>
+              <input
+                className="input"
+                placeholder="Ex. directeur·rice de casting, assistante prod"
+                value={contactForm.role}
+                onChange={(e) => setContact({ role: e.target.value })}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Email</label>
+              <input
+                className="input"
+                type="email"
+                value={contactForm.email}
+                onChange={(e) => setContact({ email: e.target.value })}
+              />
+            </div>
+            <div className="field event-contact-full">
+              <label>Téléphone</label>
+              <input
+                className="input"
+                type="tel"
+                value={contactForm.phone}
+                onChange={(e) => setContact({ phone: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <LocalAttachmentsPicker
+          label="Documents"
+          hint={`Scénario, fiche de préparation selftape, brief… (max. ${MAX_LOCAL_FILE_BYTES / 1024 / 1024} Mo par fichier, stockage local).`}
+          attachments={attachments}
+          onChange={setAttachments}
+        />
 
         <div className="field">
           <label>

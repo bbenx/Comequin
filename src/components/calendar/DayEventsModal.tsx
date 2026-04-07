@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns'
+import { formatEventTimeRange } from '../../lib/eventDisplay'
 import { fr } from 'date-fns/locale/fr'
 import type { CalendarEvent } from '../../types'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '../../constants/eventTypes'
@@ -72,8 +73,9 @@ export function DayEventsModal({
                   >
                     <span className="t">{ev.title}</span>
                     <span className="sub">
-                      {format(parseISO(ev.start), 'HH:mm')} ·{' '}
+                      {formatEventTimeRange(ev.start, ev.end)} ·{' '}
                       {EVENT_TYPE_LABELS[ev.type]}
+                      {ev.paid ? ' · Rémunéré' : ''}
                     </span>
                   </button>
                 </li>
