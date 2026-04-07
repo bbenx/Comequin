@@ -5,6 +5,12 @@ import { PROJECT_STATUS_LABELS } from '../constants/projectStatus'
 import { useAppActions, useAppState } from '../context/AppStateContext'
 import { MailAssistantModal } from '../components/projects/MailAssistantModal'
 import { ProjectAttachmentsSection } from '../components/projects/ProjectAttachmentsSection'
+import {
+  PLACEHOLDER_AGENCY_NAME,
+  PLACEHOLDER_PROJECT_BRIEF,
+  PLACEHOLDER_PROJECT_CONTACT_NAME,
+  PLACEHOLDER_PROJECT_OR_EVENT_TITLE,
+} from '../constants/formPlaceholders'
 
 function emptyProject(id: string): Project {
   const now = new Date().toISOString()
@@ -98,6 +104,7 @@ function ProjectDetailInner({ id }: { id: string }) {
           className="input"
           value={project.name}
           onChange={(e) => setField('name', e.target.value)}
+          placeholder={PLACEHOLDER_PROJECT_OR_EVENT_TITLE}
         />
       </div>
 
@@ -107,6 +114,7 @@ function ProjectDetailInner({ id }: { id: string }) {
           className="input"
           value={project.contact.name}
           onChange={(e) => setContact('name', e.target.value)}
+          placeholder={PLACEHOLDER_PROJECT_CONTACT_NAME}
         />
       </div>
       <div className="field">
@@ -115,6 +123,7 @@ function ProjectDetailInner({ id }: { id: string }) {
           className="input"
           value={project.contact.agency}
           onChange={(e) => setContact('agency', e.target.value)}
+          placeholder={PLACEHOLDER_AGENCY_NAME}
         />
       </div>
       <div className="field">
@@ -150,6 +159,7 @@ function ProjectDetailInner({ id }: { id: string }) {
           className="textarea"
           value={project.brief}
           onChange={(e) => setField('brief', e.target.value)}
+          placeholder={PLACEHOLDER_PROJECT_BRIEF}
         />
       </div>
 

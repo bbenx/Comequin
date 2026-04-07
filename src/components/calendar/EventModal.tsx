@@ -10,8 +10,13 @@ import type {
 import { EVENT_TYPE_GROUPS, EVENT_TYPE_LABELS } from '../../constants/eventTypes'
 import { useAppActions, useAppState } from '../../context/AppStateContext'
 import { LocalAttachmentsPicker } from '../shared/LocalAttachmentsPicker'
-import { MAX_LOCAL_FILE_BYTES } from '../../lib/localFiles'
 import { createProjectPayloadFromEvent } from '../../lib/projectFromEvent'
+import {
+  DOCUMENTS_FIELD_HINT,
+  PLACEHOLDER_AGENCY_NAME,
+  PLACEHOLDER_CONTACT_ROLE,
+  PLACEHOLDER_PROJECT_OR_EVENT_TITLE,
+} from '../../constants/formPlaceholders'
 
 function toInputLocal(iso: string) {
   try {
@@ -236,7 +241,7 @@ export function EventModal({
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. Martini — selftape"
+            placeholder={PLACEHOLDER_PROJECT_OR_EVENT_TITLE}
           />
         </div>
 
@@ -402,7 +407,7 @@ export function EventModal({
                 className="input"
                 value={contactForm.agencyName}
                 onChange={(e) => setContact({ agencyName: e.target.value })}
-                placeholder="Ex. Agence Céline"
+                placeholder={PLACEHOLDER_AGENCY_NAME}
               />
             </div>
           )}
@@ -427,7 +432,7 @@ export function EventModal({
               <label>Rôle</label>
               <input
                 className="input"
-                placeholder="Ex. directeur·rice de casting, assistante prod"
+                placeholder={PLACEHOLDER_CONTACT_ROLE}
                 value={contactForm.role}
                 onChange={(e) => setContact({ role: e.target.value })}
               />
@@ -455,7 +460,7 @@ export function EventModal({
 
         <LocalAttachmentsPicker
           label="Documents"
-          hint={`Scénario, fiche de préparation selftape, brief… (max. ${MAX_LOCAL_FILE_BYTES / 1024 / 1024} Mo par fichier, stockage local).`}
+          hint={DOCUMENTS_FIELD_HINT}
           attachments={attachments}
           onChange={setAttachments}
         />
