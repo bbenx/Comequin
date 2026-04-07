@@ -106,6 +106,23 @@ export function SettingsPage() {
           OAuth côté navigateur pour envoyer des mails depuis l’app avec votre
           signature Gmail (scopes : envoi + lecture des paramètres d’envoi).
         </p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>
+          Si la connexion ne marche que sur le téléphone : Google n’accepte que
+          l’URL affichée dans la barre d’adresse. Dans la{' '}
+          <a
+            href="https://console.cloud.google.com/apis/credentials"
+            target="_blank"
+            rel="noreferrer"
+          >
+            console Google Cloud
+          </a>
+          , ouvrez votre identifiant OAuth (type Web), puis sous{' '}
+          <strong>Origines JavaScript autorisées</strong>, ajoutez chaque origine
+          utilisée — par ex. <code>http://localhost:5173</code> pour le dev sur
+          ordinateur <em>et</em> l’URL HTTPS du site (ex. Vercel) si vous testez
+          sur mobile. <code>localhost</code> et <code>127.0.0.1</code> sont deux
+          origines différentes.
+        </p>
         {hasToken ? (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--ok)' }}>

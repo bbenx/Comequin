@@ -324,7 +324,7 @@ button {
 }
 
 .cal-cell {
-  min-height: 72px;
+  min-height: 88px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   padding: 4px;
@@ -332,6 +332,13 @@ button {
   background: var(--bg-elevated);
   text-align: left;
   vertical-align: top;
+  cursor: pointer;
+  outline: none;
+}
+
+.cal-cell:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(94, 234, 212, 0.25);
 }
 
 .cal-cell.muted {
@@ -345,6 +352,88 @@ button {
 .cal-cell .day-num {
   font-weight: 700;
   margin-bottom: 4px;
+}
+
+.cal-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cal-event-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 1px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: 2px;
+}
+
+.cal-event-row:hover .cal-event-title {
+  color: var(--text);
+}
+
+.cal-event-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.cal-event-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-event-title {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.cal-event-more {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  padding-left: 12px;
+  opacity: 0.9;
+}
+
+.cal-legend {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .cal-dot {

@@ -7,6 +7,8 @@ export type EventType =
   | 'tournage_shooting'
   | 'apprentissage_texte'
   | 'atelier'
+  /** Indispo perso, voyage, vie privée (hors pro) */
+  | 'perso'
 
 export type ProjectStatus = 'en_attente' | 'confirme' | 'refuse' | 'sans_reponse'
 
@@ -25,6 +27,9 @@ export interface EventContact {
   phone?: string
   /** Ex. directeur·rice de casting, assistante prod */
   role?: string
+  /** Le contact passe par / représente une agence */
+  agencyContact?: boolean
+  agencyName?: string
 }
 
 export interface CalendarEvent {

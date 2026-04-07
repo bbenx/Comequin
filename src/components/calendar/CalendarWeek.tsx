@@ -2,11 +2,11 @@ import {
   eachDayOfInterval,
   endOfWeek,
   format,
-  isSameDay,
   parseISO,
   startOfWeek,
 } from 'date-fns'
 import { formatEventTimeRange } from '../../lib/eventDisplay'
+import { eventSpansDay } from '../../lib/eventSpansDay'
 import { fr } from 'date-fns/locale/fr'
 import type { CalendarEvent } from '../../types'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '../../constants/eventTypes'
@@ -32,7 +32,7 @@ export function CalendarWeek({
 
   const eventsForDay = (d: Date) =>
     events
-      .filter((ev) => isSameDay(parseISO(ev.start), d))
+      .filter((ev) => eventSpansDay(ev, d))
       .sort((a, b) => +parseISO(a.start) - +parseISO(b.start))
 
   return (

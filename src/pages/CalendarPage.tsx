@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { isSameDay, parseISO } from 'date-fns'
 import { useAppState } from '../context/AppStateContext'
 import { CalendarMonth } from '../components/calendar/CalendarMonth'
 import { CalendarWeek } from '../components/calendar/CalendarWeek'
 import { DayEventsModal } from '../components/calendar/DayEventsModal'
 import { addMonth, addWeek } from '../lib/calendarNav'
+import { eventSpansDay } from '../lib/eventSpansDay'
 import { EventModal } from '../components/calendar/EventModal'
 import type { CalendarEvent } from '../types'
 
@@ -23,7 +23,7 @@ export function CalendarPage() {
   const eventsForDayPanel = useMemo(() => {
     if (!dayPanel) return []
     return state.events.filter((ev) =>
-      isSameDay(parseISO(ev.start), dayPanel),
+      dayPanel ? eventSpansDay(ev, dayPanel) : false,
     )
   }, [dayPanel, state.events])
 
@@ -71,10 +71,12 @@ export function CalendarPage() {
         <button
           type="button"
           className="btn btn-primary"
-          style={{ marginLeft: 'auto' }}
+          style={{ marginLeft: 'auto', minWidth: 44 }}
           onClick={() => openNew(new Date())}
+          aria-label="Nouvel événement"
+          title="Nouvel événement"
         >
-          + Événement
+          +
         </button>
       </div>
 

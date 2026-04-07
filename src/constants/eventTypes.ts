@@ -20,16 +20,17 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   tournage_shooting: 'Tournage / shooting',
   apprentissage_texte: 'Apprentissage de textes',
   atelier: 'Atelier',
+  perso: 'Perso (indispo / voyage)',
 }
 
 export const EVENT_TYPE_GROUPS: { label: string; types: EventType[] }[] = [
   {
     label: 'Parcours casting & tournage',
     types: [
-      'callback_possible',
       'selftape_preparation',
       'selftape_envoi',
       'attente_retour',
+      'callback_possible',
       'callback_casting',
       'tournage_shooting',
     ],
@@ -37,6 +38,10 @@ export const EVENT_TYPE_GROUPS: { label: string; types: EventType[] }[] = [
   {
     label: 'Préparation & ateliers',
     types: ['apprentissage_texte', 'atelier'],
+  },
+  {
+    label: 'Personnel',
+    types: ['perso'],
   },
 ]
 
@@ -58,6 +63,16 @@ export const EVENT_TYPE_COLORS: Record<
   tournage_shooting: { bg: '#2a2550', border: '#5a4fcf', text: '#c4b5fd' },
   apprentissage_texte: { bg: '#3a2d40', border: '#9b72cf', text: '#e0c3fc' },
   atelier: { bg: '#283d32', border: '#40916c', text: '#b7e4c7' },
+  perso: { bg: '#3a3238', border: '#a67f8e', text: '#e8c9d4' },
+}
+
+/** Couleurs d’un type (repli si donnée ancienne / inconnue). */
+export function colorsForEventType(t: EventType): {
+  bg: string
+  border: string
+  text: string
+} {
+  return EVENT_TYPE_COLORS[t] ?? EVENT_TYPE_COLORS.attente_retour
 }
 
 const EVENT_TYPE_KEYS = new Set(

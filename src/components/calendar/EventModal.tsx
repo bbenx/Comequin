@@ -7,14 +7,11 @@ import type {
   ProjectAttachment,
   ReminderUnit,
 } from '../../types'
-import {
-  DEFAULT_EVENT_TYPE,
-  EVENT_TYPE_GROUPS,
-  EVENT_TYPE_LABELS,
-} from '../../constants/eventTypes'
+import { EVENT_TYPE_GROUPS, EVENT_TYPE_LABELS } from '../../constants/eventTypes'
 import { useAppActions, useAppState } from '../../context/AppStateContext'
 import { LocalAttachmentsPicker } from '../shared/LocalAttachmentsPicker'
 import { MAX_LOCAL_FILE_BYTES } from '../../lib/localFiles'
+import { createProjectPayloadFromEvent } from '../../lib/projectFromEvent'
 
 function toInputLocal(iso: string) {
   try {
@@ -34,6 +31,8 @@ type ContactForm = {
   email: string
   phone: string
   role: string
+  agencyContact: boolean
+  agencyName: string
 }
 
 function contactFromEvent(ev: CalendarEvent | null | undefined): ContactForm {
@@ -44,6 +43,8 @@ function contactFromEvent(ev: CalendarEvent | null | undefined): ContactForm {
     email: c?.email ?? '',
     phone: c?.phone ?? '',
     role: c?.role ?? '',
+    agencyContact: !!c?.agencyContact,
+    agencyName: c?.agencyName ?? '',
   }
 }
 
@@ -54,6 +55,10 @@ function contactFormToContact(f: ContactForm): EventContact | undefined {
   if (f.email.trim()) out.email = f.email.trim()
   if (f.phone.trim()) out.phone = f.phone.trim()
   if (f.role.trim()) out.role = f.role.trim()
+  if (f.agencyContact) {
+    out.agencyContact = true
+    if (f.agencyName.trim()) out.agencyName = f.agencyName.trim()
+  }
   return Object.keys(out).length ? out : undefined
 }
 
@@ -75,20 +80,17 @@ export function EventModal({
   const { state } = useAppState()
   const {
     addEvent,
+    addProject,
     updateEvent,
     deleteEvent,
     clearEventReminderNotified,
   } = useAppActions()
 
-  const lockTitleFromInbox = useState(() => !!initialTitle?.trim())[0]
-
   const [title, setTitle] = useState(() =>
-    editing
-      ? editing.title
-      : (initialTitle?.trim() ?? EVENT_TYPE_LABELS[DEFAULT_EVENT_TYPE]),
+    editing ? editing.title : (initialTitle?.trim() ?? ''),
   )
-  const [type, setType] = useState<EventType>(
-    () => editing?.type ?? DEFAULT_EVENT_TYPE,
+  const [type, setType] = useState<EventType | ''>(() =>
+    editing ? editing.type : '',
   )
   const [start, setStart] = useState(() =>
     editing
@@ -100,6 +102,10 @@ export function EventModal({
   )
   const [projectId, setProjectId] = useState(
     () => editing?.projectId ?? '',
+  )
+  /** Nouvelle fiche auto : seulement si l’événement n’est pas déjà lié */
+  const [createLinkedProject, setCreateLinkedProject] = useState(
+    () => !editing?.projectId,
   )
   const [paid, setPaid] = useState(() => !!editing?.paid)
   const [contactForm, setContactForm] = useState<ContactForm>(() =>
@@ -125,12 +131,11 @@ export function EventModal({
     setContactForm((f) => ({ ...f, ...patch }))
   }
 
-  const pickType = (t: EventType) => {
-    setType(t)
-    if (!editing && !lockTitleFromInbox) setTitle(EVENT_TYPE_LABELS[t])
-  }
-
   const save = () => {
+    if (!type) {
+      window.alert('Sélectionnez une étape.')
+      return
+    }
     const startIso = fromInputLocal(start)
     let endIso: string | undefined
     if (end.trim()) {
@@ -148,17 +153,33 @@ export function EventModal({
         : undefined
     const contact = contactFormToContact(contactForm)
     const atts = attachments.length > 0 ? attachments : undefined
+    const finalTitle = title.trim() || EVENT_TYPE_LABELS[type]
+
+    let resolvedProjectId = projectId.trim() || undefined
+    if (createLinkedProject && !resolvedProjectId) {
+      const proj = createProjectPayloadFromEvent({
+        title: finalTitle,
+        typeLabel: EVENT_TYPE_LABELS[type],
+        startIso,
+        endIso,
+        paid,
+        contactForm,
+        attachments,
+      })
+      addProject(proj)
+      resolvedProjectId = proj.id
+    }
 
     if (editing) {
       const nextKey = `${startIso}|${JSON.stringify(reminder ?? null)}`
       if (nextKey !== originalKey) clearEventReminderNotified(editing.id)
       updateEvent({
         ...editing,
-        title: title.trim() || EVENT_TYPE_LABELS[type],
+        title: finalTitle,
         type,
         start: startIso,
         end: endIso,
-        projectId: projectId || undefined,
+        projectId: resolvedProjectId,
         paid,
         contact,
         attachments: atts,
@@ -169,11 +190,11 @@ export function EventModal({
     } else {
       addEvent({
         id: crypto.randomUUID(),
-        title: title.trim() || EVENT_TYPE_LABELS[type],
+        title: finalTitle,
         type,
         start: startIso,
         end: endIso,
-        projectId: projectId || undefined,
+        projectId: resolvedProjectId,
         paid,
         contact,
         attachments: atts,
@@ -215,6 +236,7 @@ export function EventModal({
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex. Martini — selftape"
           />
         </div>
 
@@ -224,8 +246,18 @@ export function EventModal({
             id="event-type-select"
             className="select"
             value={type}
-            onChange={(e) => pickType(e.target.value as EventType)}
+            required={!editing}
+            aria-required={!editing}
+            onChange={(e) => {
+              const v = e.target.value
+              const next = v === '' ? '' : (v as EventType)
+              setType(next)
+              if (next === 'perso') setCreateLinkedProject(false)
+            }}
           >
+            <option value="" disabled>
+              Sélectionner l’étape
+            </option>
             {EVENT_TYPE_GROUPS.map((g) => (
               <optgroup key={g.label} label={g.label}>
                 {g.types.map((t) => (
@@ -274,29 +306,106 @@ export function EventModal({
               margin: '6px 0 0',
             }}
           >
-            Laisse vide pour un créneau ponctuel (une heure de début seule).
+            Laisse vide pour un créneau ponctuel. Avec une date de fin, l’événement
+            apparaît sur chaque jour de la plage (ex. voyage perso du 24 au 26).
           </p>
         </div>
 
-        <div className="field">
-          <label htmlFor="event-project-select">Fiche projet</label>
-          <select
-            id="event-project-select"
-            className="select"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-          >
-            <option value="">— Aucune —</option>
-            {state.projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {editing && projectId ? (
+          <div className="field">
+            <label htmlFor="event-project-select">Fiche projet</label>
+            <select
+              id="event-project-select"
+              className="select"
+              value={projectId}
+              onChange={(e) => {
+                const v = e.target.value
+                setProjectId(v)
+                if (!v) setCreateLinkedProject(true)
+              }}
+            >
+              <option value="">— Aucune —</option>
+              {state.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <>
+            <div className="field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={createLinkedProject}
+                  onChange={(e) => {
+                    const on = e.target.checked
+                    setCreateLinkedProject(on)
+                    if (on) setProjectId('')
+                  }}
+                />{' '}
+                Créer une fiche projet avec ces infos et lier cet événement
+              </label>
+            </div>
+            <div className="field">
+              <label htmlFor="event-project-select">
+                {createLinkedProject
+                  ? 'Fiche existante (désactivée)'
+                  : 'Ou lier à une fiche existante'}
+              </label>
+              <select
+                id="event-project-select"
+                className="select"
+                disabled={createLinkedProject}
+                value={createLinkedProject ? '' : projectId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setProjectId(v)
+                  if (v) setCreateLinkedProject(false)
+                }}
+              >
+                <option value="">— Aucune —</option>
+                {state.projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
 
         <div className="event-modal-section">
           <div className="event-modal-section-title">Contact sur cet événement</div>
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={contactForm.agencyContact}
+                onChange={(e) =>
+                  setContact({
+                    agencyContact: e.target.checked,
+                    agencyName: e.target.checked
+                      ? contactForm.agencyName
+                      : '',
+                  })
+                }
+              />{' '}
+              Agence
+            </label>
+          </div>
+          {contactForm.agencyContact && (
+            <div className="field event-contact-full" style={{ marginBottom: 12 }}>
+              <label>Nom de l’agence</label>
+              <input
+                className="input"
+                value={contactForm.agencyName}
+                onChange={(e) => setContact({ agencyName: e.target.value })}
+                placeholder="Ex. Agence Céline"
+              />
+            </div>
+          )}
           <div className="event-contact-grid">
             <div className="field" style={{ marginBottom: 0 }}>
               <label>Prénom</label>
