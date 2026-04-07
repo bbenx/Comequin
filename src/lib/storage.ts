@@ -57,7 +57,8 @@ function normalizeEvent(raw: unknown): CalendarEvent {
 function normalizeProject(raw: unknown): Project {
   const p = raw as Project
   const attachments = Array.isArray(p.attachments) ? p.attachments : []
-  return { ...p, attachments }
+  const notes = Array.isArray(p.notes) ? p.notes : []
+  return { ...p, attachments, notes }
 }
 
 function defaultState(): AppState {

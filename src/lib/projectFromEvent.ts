@@ -74,6 +74,7 @@ export function createProjectPayloadFromEvent(opts: {
     brief: briefLines.join('\n'),
     emailHistory: [],
     attachments: projectAttachments,
+    notes: [],
     createdAt: now,
     updatedAt: now,
   }

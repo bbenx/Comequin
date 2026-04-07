@@ -294,6 +294,50 @@ button {
   font-size: 1.1rem;
 }
 
+.event-detail-list {
+  margin: 0;
+}
+
+.event-detail-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+
+.event-detail-row:last-of-type {
+  border-bottom: none;
+}
+
+.event-detail-label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.event-detail-value {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.event-detail-type-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+@media (max-width: 400px) {
+  .event-detail-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;

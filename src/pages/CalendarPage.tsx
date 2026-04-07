@@ -6,6 +6,7 @@ import { DayEventsModal } from '../components/calendar/DayEventsModal'
 import { addMonth, addWeek } from '../lib/calendarNav'
 import { eventSpansDay } from '../lib/eventSpansDay'
 import { EventModal } from '../components/calendar/EventModal'
+import { EventDetailModal } from '../components/calendar/EventDetailModal'
 import type { CalendarEvent } from '../types'
 
 type View = 'month' | 'week'
@@ -18,6 +19,7 @@ export function CalendarPage() {
   const [modalKey, setModalKey] = useState(0)
   const [modalDate, setModalDate] = useState<Date | undefined>()
   const [editing, setEditing] = useState<CalendarEvent | null>(null)
+  const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null)
   const [dayPanel, setDayPanel] = useState<Date | null>(null)
 
   const eventsForDayPanel = useMemo(() => {
@@ -34,12 +36,26 @@ export function CalendarPage() {
     setModalOpen(true)
   }
 
+  const openDetail = (e: CalendarEvent) => {
+    setDayPanel(null)
+    setDetailEvent(e)
+  }
+
   const openEdit = (e: CalendarEvent) => {
     setDayPanel(null)
+    setDetailEvent(null)
     setModalKey((k) => k + 1)
     setEditing(e)
     setModalDate(undefined)
     setModalOpen(true)
+  }
+
+  const openEditFromDetail = () => {
+    if (!detailEvent) return
+    const fresh =
+      state.events.find((x) => x.id === detailEvent.id) ?? detailEvent
+    setDetailEvent(null)
+    openEdit(fresh)
   }
 
   const openNewForDay = (d: Date) => {
@@ -88,7 +104,7 @@ export function CalendarPage() {
           onNext={() => setCursor((c) => addMonth(c, 1))}
           onSelectDay={(d) => setDayPanel(d)}
           onGoToday={() => setCursor(new Date())}
-          onOpenEvent={openEdit}
+          onOpenEvent={openDetail}
         />
       ) : (
         <CalendarWeek
@@ -96,7 +112,7 @@ export function CalendarPage() {
           events={state.events}
           onPrev={() => setCursor((c) => addWeek(c, -1))}
           onNext={() => setCursor((c) => addWeek(c, 1))}
-          onOpenEvent={openEdit}
+          onOpenEvent={openDetail}
         />
       )}
 
@@ -105,8 +121,16 @@ export function CalendarPage() {
           date={dayPanel}
           events={eventsForDayPanel}
           onClose={() => setDayPanel(null)}
-          onOpenEvent={openEdit}
+          onOpenEvent={openDetail}
           onCreateOnDay={() => openNewForDay(dayPanel)}
+        />
+      )}
+
+      {detailEvent && (
+        <EventDetailModal
+          event={detailEvent}
+          onClose={() => setDetailEvent(null)}
+          onEdit={openEditFromDetail}
         />
       )}
 

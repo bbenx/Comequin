@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { Project, ProjectStatus } from '../types'
+import type { Project, ProjectNote, ProjectStatus } from '../types'
 import { PROJECT_STATUS_LABELS } from '../constants/projectStatus'
 import { useAppActions, useAppState } from '../context/AppStateContext'
 import { MailAssistantModal } from '../components/projects/MailAssistantModal'
@@ -22,6 +22,7 @@ function emptyProject(id: string): Project {
     brief: '',
     emailHistory: [],
     attachments: [],
+    notes: [],
     createdAt: now,
     updatedAt: now,
   }
@@ -46,6 +47,7 @@ function ProjectDetailInner({ id }: { id: string }) {
     return ex ? { ...ex } : null
   })
   const [mailOpen, setMailOpen] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
 
   if (!isNew && (!existing || !form)) {
     return (
@@ -85,6 +87,29 @@ function ProjectDetailInner({ id }: { id: string }) {
       navigate('/projets')
     }
   }
+
+  const addNote = () => {
+    const text = noteDraft.trim()
+    if (!text) return
+    const n: ProjectNote = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: new Date().toISOString(),
+    }
+    setField('notes', [n, ...project.notes])
+    setNoteDraft('')
+  }
+
+  const removeNote = (noteId: string) => {
+    setField(
+      'notes',
+      project.notes.filter((x) => x.id !== noteId),
+    )
+  }
+
+  const notesNewestFirst = [...project.notes].sort(
+    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+  )
 
   return (
     <div className="page">
@@ -167,6 +192,101 @@ function ProjectDetailInner({ id }: { id: string }) {
         attachments={project.attachments}
         onChange={(attachments) => setField('attachments', attachments)}
       />
+
+      <section className="card" style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: '1rem', margin: '0 0 12px' }}>Notes</h2>
+        <p
+          style={{
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+            margin: '0 0 12px',
+          }}
+        >
+          Ajoute des notes datées (suivi, retours agence, rappels). Elles sont
+          enregistrées avec la fiche au moment où tu cliques sur Enregistrer.
+        </p>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label htmlFor="project-note-draft">Nouvelle note</label>
+          <textarea
+            id="project-note-draft"
+            className="textarea"
+            rows={3}
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            placeholder="Ex. Relance envoyée — en attente de réponse pour le 12."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                addNote()
+              }
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <button type="button" className="btn btn-ghost" onClick={addNote}>
+            + Ajouter la note
+          </button>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            Raccourci : ⌘/Ctrl + Entrée
+          </span>
+        </div>
+        {notesNewestFirst.length > 0 && (
+          <ul
+            className="project-notes-list"
+            style={{ listStyle: 'none', padding: 0, margin: '16px 0 0' }}
+          >
+            {notesNewestFirst.map((n) => (
+              <li
+                key={n.id}
+                className="card"
+                style={{
+                  marginBottom: 8,
+                  padding: '10px 12px',
+                  background: 'var(--bg-elevated)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    marginBottom: 6,
+                  }}
+                >
+                  <time
+                    dateTime={n.createdAt}
+                    style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}
+                  >
+                    {new Date(n.createdAt).toLocaleString('fr-FR', {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
+                  </time>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                    onClick={() => removeNote(n.id)}
+                  >
+                    Retirer
+                  </button>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {n.text}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <button type="button" className="btn btn-primary" onClick={save}>

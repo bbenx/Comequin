@@ -71,6 +71,13 @@ export interface ProjectAttachment {
   addedAt: string
 }
 
+/** Note datée sur une fiche projet (historique chronologique) */
+export interface ProjectNote {
+  id: string
+  text: string
+  createdAt: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -80,6 +87,8 @@ export interface Project {
   emailHistory: SentEmailRecord[]
   /** Photos et fichiers associés à la fiche */
   attachments: ProjectAttachment[]
+  /** Notes successives (affichage du plus récent au plus ancien) */
+  notes: ProjectNote[]
   createdAt: string
   updatedAt: string
 }
